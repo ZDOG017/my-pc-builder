@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 interface Message {
   text: string;
@@ -28,16 +29,20 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (inputMessage.trim() === '') return;
 
     setMessages([...messages, { text: inputMessage, isUser: true }]);
     setInputMessage('');
 
-    setTimeout(() => {
-      setMessages(prevMessages => [...prevMessages, { text: "Это пример ответа от ИИ. Здесь будет реальный ответ от ChatGPT.", isUser: false }]);
-    }, 1000);
+    try {
+      const response = await axios.post('http://localhost:5000/api/generate', { prompt: inputMessage });
+      setMessages(prevMessages => [...prevMessages, { text: response.data.response, isUser: false }]);
+    } catch (error) {
+      console.error('Error sending message to API:', error);
+      setMessages(prevMessages => [...prevMessages, { text: 'Error generating response from server.', isUser: false }]);
+    }
   };
 
   return (
