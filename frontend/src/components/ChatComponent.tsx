@@ -17,12 +17,17 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      setMessages([
-        { text: initialPrompt, isUser: true },
-        { text: "Спасибо за предоставленную информацию. Я анализирую ваши требования и подбираю оптимальную конфигурацию ПК. Это может занять несколько секунд.", isUser: false }
-      ]);
-    }, 1000);
+    const fetchInitialResponse = async () => {
+      try {
+        const response = await axios.post('http://localhost:5000/api/generate', { prompt: initialPrompt });
+        setMessages([{ text: response.data.response, isUser: false }]);
+      } catch (error) {
+        console.error('Error fetching initial response:', error);
+        setMessages([{ text: 'Error generating response from server.', isUser: false }]);
+      }
+    };
+
+    fetchInitialResponse();
   }, [initialPrompt]);
 
   useEffect(() => {
@@ -33,15 +38,18 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     e.preventDefault();
     if (inputMessage.trim() === '') return;
 
-    setMessages([...messages, { text: inputMessage, isUser: true }]);
+    const userMessage = { text: inputMessage, isUser: true };
+    setMessages(prevMessages => [...prevMessages, userMessage]);
     setInputMessage('');
 
     try {
       const response = await axios.post('http://localhost:5000/api/generate', { prompt: inputMessage });
-      setMessages(prevMessages => [...prevMessages, { text: response.data.response, isUser: false }]);
+      const botMessage = { text: response.data.response, isUser: false };
+      setMessages(prevMessages => [...prevMessages, botMessage]);
     } catch (error) {
       console.error('Error sending message to API:', error);
-      setMessages(prevMessages => [...prevMessages, { text: 'Error generating response from server.', isUser: false }]);
+      const errorMessage = { text: 'Error generating response from server.', isUser: false };
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
     }
   };
 
