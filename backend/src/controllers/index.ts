@@ -1,3 +1,5 @@
+// index.ts
+
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
@@ -15,12 +17,20 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
+// Add this interface to match the Product type from parser.ts
+interface Product {
+  name: string;
+  price: number;
+  url: string;
+  image: string;
+}
+
 export const generateResponse = async (req: Request, res: Response) => {
   try {
     const { prompt } = req.body;
     console.log('Received prompt:', prompt);
 
-    const modelId = "gpt-4";
+    const modelId = "gpt-4o";
     const systemPrompt = `Вы - ассистент, который помогает выбрать компоненты для сборки ПК на основе данных из базы данных. 
     Пожалуйста, указывайте компоненты только с их названиями, без типа, цены и дополнительных описаний. Пишите только названия компонентов, каждое на отдельной строке. 
     Пример формата ответа:
@@ -43,22 +53,26 @@ export const generateResponse = async (req: Request, res: Response) => {
     const responseText = result.choices[0].message?.content || '';
     console.log('Received response from OpenAI: \n', responseText);
 
-    // После получения ответа, запускаем парсинг выбранных компонентов
+    // Split the response into individual component names
     const components = responseText.split('\n').map(line => line.trim()).filter(line => line);
 
-    const fetchedProducts = [];
-    for (const component of components) {
-      try {
-        const product = await parseComponentByName(component);
-        if (product) {
-          fetchedProducts.push(product);
+    // Use Promise.all to parse all components concurrently
+    const fetchedProducts = await Promise.all(
+      components.map(async (component) => {
+        try {
+          return await parseComponentByName(component);
+        } catch (err) {
+          console.error('Error fetching product:', component, err);
+          return null;
         }
-      } catch (err) {
-        console.error('Error fetching product:', component, err);
-      }
-    }
+      })
+    );
 
-    res.send({ response: responseText, products: fetchedProducts });
+    // Filter out any null results (components that weren't found)
+    const availableProducts = fetchedProducts.filter((product): product is Product => product !== null);
+
+    // Send both the original response and the available products to the frontend
+    res.send({ response: responseText, products: availableProducts });
 
   } catch (err) {
     console.error('Error in generateResponse:', err);
