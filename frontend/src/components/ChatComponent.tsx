@@ -11,45 +11,62 @@ interface ChatComponentProps {
   initialPrompt: string;
 }
 
+const Loader = () => (
+  <div className="flex justify-center items-center">
+    <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+  </div>
+);
+
+const MessageContent = ({ content }: { content: string }) => {
+  const formattedContent = content.split('\n').map((line, index) => {
+    if (line.match(/^\d+\./)) {
+      return <p key={index} className="mb-2">{line}</p>;
+    }
+    return <span key={index}>{line}<br/></span>;
+  });
+
+  return <div className="whitespace-pre-wrap">{formattedContent}</div>;
+};
+
 export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const isInitialPromptSent = useRef(false);
 
   useEffect(() => {
-    const fetchInitialResponse = async () => {
-      try {
-        const response = await axios.post('http://localhost:5000/api/generate', { prompt: initialPrompt });
-        setMessages([{ text: response.data.response, isUser: false }]);
-      } catch (error) {
-        console.error('Error fetching initial response:', error);
-        setMessages([{ text: 'Error generating response from server.', isUser: false }]);
-      }
-    };
-
-    fetchInitialResponse();
+    if (!isInitialPromptSent.current) {
+      handleSendMessage(null, initialPrompt);
+      isInitialPromptSent.current = true;
+    }
   }, [initialPrompt]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputMessage.trim() === '') return;
+  const handleSendMessage = async (e: React.FormEvent | null, message: string = inputMessage) => {
+    if (e) e.preventDefault();
+    if (message.trim() === '') return;
 
-    const userMessage = { text: inputMessage, isUser: true };
+    const userMessage = { text: message, isUser: true };
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInputMessage('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/generate', { prompt: inputMessage });
+      setLoading(true);
+      console.log('Sending message:', message);
+      const response = await axios.post('http://localhost:5000/api/generate', { prompt: message });
+      console.log('Received response:', response.data);
       const botMessage = { text: response.data.response, isUser: false };
       setMessages(prevMessages => [...prevMessages, botMessage]);
     } catch (error) {
       console.error('Error sending message to API:', error);
       const errorMessage = { text: 'Error generating response from server.', isUser: false };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,14 +78,19 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
       <div className="h-[calc(100vh-300px)] overflow-y-auto p-6">
         {messages.map((message, index) => (
           <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
-            <div className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-              {message.text}
+            <div className={`inline-block p-4 rounded-lg ${message.isUser ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+              <MessageContent content={message.text} />
             </div>
           </div>
         ))}
+        {loading && (
+          <div className="mb-4 text-center">
+            <Loader />
+          </div>
+        )}
         <div ref={chatEndRef} />
       </div>
-      <form onSubmit={handleSendMessage} className="p-4 border-t">
+      <form onSubmit={(e) => handleSendMessage(e)} className="p-4 border-t">
         <div className="flex flex-col md:flex-row">
           <input
             type="text"

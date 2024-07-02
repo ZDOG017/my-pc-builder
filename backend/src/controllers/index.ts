@@ -17,20 +17,25 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
-const currentMessages: ChatCompletionMessageParam[] = [];
-
 export const generateResponse = async (req: Request, res: Response) => {
   try {
     const { prompt } = req.body;
-    const modelId = "gpt-4";
-    const promptText = `${prompt}\n\nResponse:`;
+    console.log('Received prompt:', prompt);
 
-    for (const [inputText, responseText] of conversationContext) {
-      currentMessages.push({ role: "user", content: inputText });
-      currentMessages.push({ role: "assistant", content: responseText });
-    }
+    const modelId = "gpt-4o";
+    const systemPrompt = `Вы - ассистент, который дает краткие и структурированные ответы. 
+    Всегда отвечайте в формате списка, где каждый пункт начинается с номера и двоеточия. 
+    Не используйте вводные фразы или дополнительные объяснения. 
+    Пример формата ответа:
+    1. Пункт: значение
+    2. Пункт: значение`;
 
-    currentMessages.push({ role: "user", content: promptText });
+    const currentMessages: ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt }
+    ];
+
+    console.log('Sending messages to OpenAI:', currentMessages);
 
     const result = await openai.chat.completions.create({
       model: modelId,
@@ -38,10 +43,11 @@ export const generateResponse = async (req: Request, res: Response) => {
     });
 
     const responseText = result.choices[0].message?.content || '';
-    conversationContext.push([promptText, responseText]);
+    console.log('Received response from OpenAI: \n', responseText);
+
     res.send({ response: responseText });
   } catch (err) {
-    console.error(err);
+    console.error('Error in generateResponse:', err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
