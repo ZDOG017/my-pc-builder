@@ -59,3 +59,22 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* Добавляем стили для продуктов */
+.product-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  background-color: #ffffff;
+  color: #333333;
+}
+
+.product-card a {
+  color: #1e90ff;
+  text-decoration: none;
+}
+
+.product-card a:hover {
+  text-decoration: underline;
+}

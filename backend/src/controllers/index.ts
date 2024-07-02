@@ -1,15 +1,13 @@
-// backend/src/controllers/index.ts
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import { parseComponentByName } from './parser';
 
 dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const conversationContext: [string, string][] = [];
 
 interface ChatCompletionMessageParam {
   role: 'user' | 'assistant' | 'system';
@@ -22,13 +20,13 @@ export const generateResponse = async (req: Request, res: Response) => {
     const { prompt } = req.body;
     console.log('Received prompt:', prompt);
 
-    const modelId = "gpt-4o";
-    const systemPrompt = `Вы - ассистент, который дает краткие и структурированные ответы. 
-    Всегда отвечайте в формате списка, где каждый пункт начинается с номера и двоеточия. 
-    Не используйте вводные фразы или дополнительные объяснения. 
+    const modelId = "gpt-4";
+    const systemPrompt = `Вы - ассистент, который помогает выбрать компоненты для сборки ПК на основе данных из базы данных. 
+    Пожалуйста, указывайте компоненты только с их названиями, без типа, цены и дополнительных описаний. Пишите только названия компонентов, каждое на отдельной строке. 
     Пример формата ответа:
-    1. Пункт: значение
-    2. Пункт: значение`;
+    AMD Ryzen 5 3600
+    Asus PRIME B450M-K
+    Gigabyte GeForce GTX 1660 SUPER OC`;
 
     const currentMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
@@ -45,7 +43,23 @@ export const generateResponse = async (req: Request, res: Response) => {
     const responseText = result.choices[0].message?.content || '';
     console.log('Received response from OpenAI: \n', responseText);
 
-    res.send({ response: responseText });
+    // После получения ответа, запускаем парсинг выбранных компонентов
+    const components = responseText.split('\n').map(line => line.trim()).filter(line => line);
+
+    const fetchedProducts = [];
+    for (const component of components) {
+      try {
+        const product = await parseComponentByName(component);
+        if (product) {
+          fetchedProducts.push(product);
+        }
+      } catch (err) {
+        console.error('Error fetching product:', component, err);
+      }
+    }
+
+    res.send({ response: responseText, products: fetchedProducts });
+
   } catch (err) {
     console.error('Error in generateResponse:', err);
     res.status(500).json({ message: "Internal server error" });
