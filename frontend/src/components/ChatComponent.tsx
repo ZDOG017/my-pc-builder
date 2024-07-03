@@ -111,6 +111,9 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     }
   };
 
+  // Calculate total price of all products
+  const totalPrice = products.reduce((sum, product) => sum + product.price, 0);
+
   return (
     <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
       <div className="bg-blue-600 text-white p-4">
@@ -139,6 +142,7 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
             onChange={(e) => setInputMessage(e.target.value)}
             className="flex-grow mb-4 md:mb-0 md:mr-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Введите ваше сообщение..."
+            style={{ color: '#000' }} // Adjust text color to something visible
           />
           <button
             type="submit"
@@ -149,6 +153,9 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
         </div>
       </form>
       <ProductList products={products} />
+      <div className="p-4">
+        <h3 className="text-xl font-bold" style={{ color: '#333' }}>Итоговая стоимость: {totalPrice} тг</h3>
+      </div>
     </div>
   );
 }
