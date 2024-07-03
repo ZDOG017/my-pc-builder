@@ -31,9 +31,11 @@ export const generateResponse = async (req: Request, res: Response) => {
     console.log('Received prompt:', prompt);
 
     const modelId = "gpt-4o";
-    const systemPrompt = `Вы - ассистент, который помогает выбрать компоненты для сборки ПК на основе данных из базы данных. 
-    Пожалуйста, указывайте компоненты только с их названиями, без типа, цены и дополнительных описаний. Пишите только названия компонентов, каждое на отдельной строке. 
-    Пример формата ответа:
+    const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability. 
+    Suggest components that are commonly available and offer good value for money. Also use components that are most popular in June 2024.
+    Prefer newer, widely available models over older or niche products. 
+    IMPORTANT: STRICTLY list only the component names, each on a separate line, without additional descriptions. DO NOT WRITE ANYTHING EXCEPT COMPONENT NAMES
+    Example of the response:
     AMD Ryzen 5 3600
     Asus PRIME B450M-K
     Gigabyte GeForce GTX 1660 SUPER OC`;

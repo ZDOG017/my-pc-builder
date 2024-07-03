@@ -32,7 +32,7 @@ export const parseComponentByName = async (name: string): Promise<Product | null
         return {
           name: productName,
           price,
-          url: `https://alfa.kz${productUrl}`,
+          url: productUrl,
           image: image.startsWith('http') ? image : `https://alfa.kz${image}`
         };
       }
