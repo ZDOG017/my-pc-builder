@@ -1,5 +1,3 @@
-// index.ts
-
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
@@ -17,7 +15,6 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
-// Add this interface to match the Product type from parser.ts
 interface Product {
   name: string;
   price: number;

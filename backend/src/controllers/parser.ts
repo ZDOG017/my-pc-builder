@@ -39,11 +39,21 @@ export const parseComponentByName = async (name: string): Promise<Product | null
     }
     
     console.log(`No matching product found for: ${name}`);
-    return null;
+    return {
+      name,
+      price: 0,
+      url: '',
+      image: 'https://via.placeholder.com/150?text=No+Image+Available'
+    };
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(`Error fetching URL for ${name}. Error: ${error.message}`);
     }
-    return null;
+    return {
+      name,
+      price: 0,
+      url: '',
+      image: 'https://via.placeholder.com/150?text=No+Image+Available'
+    };
   }
 };
