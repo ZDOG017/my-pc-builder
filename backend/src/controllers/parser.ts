@@ -1,5 +1,8 @@
+// parser.ts
+
 import axios from 'axios';
 import cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
 
 interface Product {
   name: string;
@@ -8,52 +11,167 @@ interface Product {
   image: string;
 }
 
-export const parseComponentByName = async (name: string): Promise<Product | null> => {
+const generateSearchTerm = (name: string): string => {
+  const words = name.split(' ');
+  const searchWords = words.slice(0, 3);
+  return searchWords.join(' ');
+};
+
+function isPartialMatch(searchTerm: string, productName: string): boolean {
+  const cleanSearchTerm = searchTerm.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+  const cleanProductName = productName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+
+  const searchWords = cleanSearchTerm.split(/\s+/);
+  const productWords = cleanProductName.split(/\s+/);
+
+  const ignoreWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'gb', 'tb', 'мб', 'гб', 'тб'];
+
+  const isImportantWord = (word: string) => !ignoreWords.includes(word) && word.length > 1;
+
+  const importantSearchWords = searchWords.filter(isImportantWord);
+
+  const matchCount = importantSearchWords.filter(searchWord => 
+    productWords.some(productWord => 
+      productWord.includes(searchWord) || searchWord.includes(productWord)
+    )
+  ).length;
+
+  const matchPercentage = (matchCount / importantSearchWords.length) * 100;
+
+  return matchPercentage > 30;
+}
+
+export const parseComponentByName = async (name: string): Promise<Product[]> => {
   try {
     const encodedName = encodeURIComponent(name);
     const url = `https://alfa.kz/q/${encodedName}`;
     console.log(`Fetching URL: ${url}`);
-    const response = await axios.get(url, { timeout: 5000 }); // Add timeout
+    const response = await axios.get(url, { timeout: 10000 });
     const $ = cheerio.load(response.data);
 
     const productElements = $('.col-12.col-sm-3.image-holder');
+    let product: Product | null = null;
     
     for (let i = 0; i < productElements.length; i++) {
-      const productElement = $(productElements[i]).next('.col-12.col-sm-9.body-holder');
+      const element = productElements[i];
+      const productElement = $(element).next('.col-12.col-sm-9.body-holder');
       
       const productName = productElement.find('h2 a span[itemprop="name"]').text().trim();
       const priceText = productElement.find('.price-container meta[itemprop="price"]').attr('content');
       const price = parseFloat(priceText || '0');
       const productUrl = productElement.find('h2 a').attr('href');
-      const image = $(productElements[i]).find('img').attr('src');
+      const image = $(element).find('img').attr('src');
 
-      if (productName && price && productUrl && image) {
+      if (productName && price && productUrl && image && isPartialMatch(name, productName)) {
         console.log(`Found item: ${productName}, Price: ${price}, URL: ${productUrl}, Image: ${image}`);
-        return {
+        product = {
           name: productName,
           price,
           url: productUrl,
           image: image.startsWith('http') ? image : `https://alfa.kz${image}`
         };
+        break; // Exit the loop after finding the first matching product
       }
     }
     
-    console.log(`No matching product found for: ${name}`);
-    return {
-      name,
-      price: 0,
-      url: '',
-      image: 'https://via.placeholder.com/150?text=No+Image+Available'
-    };
+    return product ? [product] : [];
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(`Error fetching URL for ${name}. Error: ${error.message}`);
     }
-    return {
-      name,
-      price: 0,
-      url: '',
-      image: 'https://via.placeholder.com/150?text=No+Image+Available'
-    };
+    return [];
+  }
+};
+
+export const parseComponentFromShopKz = async (name: string): Promise<Product[]> => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  try {
+    const searchTerm = generateSearchTerm(name);
+    const encodedName = encodeURIComponent(searchTerm);
+    const url = `https://shop.kz/search/?q=${encodedName}`;
+    console.log(`Fetching Shop.kz search URL: ${url}`);
+
+    await page.goto(url, { waitUntil: 'networkidle0' });
+
+    await page.waitForSelector('.multisearch-page__product', { timeout: 10000 });
+
+    const product: Product | null = await page.evaluate((searchTerm) => {
+      const element = document.querySelector('.multisearch-page__product');
+      if (element) {
+        const productData = element.getAttribute('data-product');
+        if (productData) {
+          try {
+            const parsedData = JSON.parse(productData);
+            const productName = parsedData.name;
+            const price = parseFloat(parsedData.price);
+            const productUrl = `https://shop.kz${element.querySelector('.product-item-title a')?.getAttribute('href')}`;
+            const image = element.querySelector('.img-centered img')?.getAttribute('src') || 'https://via.placeholder.com/150?text=No+Image+Available';
+
+            return { name: productName, price, url: productUrl, image };
+          } catch (parseError) {
+            console.error('Error parsing product data:', parseError);
+          }
+        }
+      }
+      return null;
+    }, searchTerm);
+
+    if (product && isPartialMatch(name, product.name)) {
+      console.log(`Found product from Shop.kz search for ${name}:`, product);
+      return [product];
+    }
+
+    console.log(`No matching products found from Shop.kz search for ${name}`);
+    return [];
+  } catch (error) {
+    console.error(`Error fetching Shop.kz search results for ${name}:`, error);
+    return [];
+  } finally {
+    await browser.close();
+  }
+};
+
+export const parseComponentFromForcecom = async (name: string): Promise<Product[]> => {
+  try {
+    const searchTerm = generateSearchTerm(name);
+    const encodedName = encodeURIComponent(searchTerm);
+    const url = `https://forcecom.kz/catalog/?q=${encodedName}&type=catalog&s=Найти`;
+    console.log(`Fetching Forcecom search URL: ${url}`);
+
+    const response = await axios.get(url, { timeout: 10000 });
+    const $ = cheerio.load(response.data);
+
+    let product: Product | null = null;
+
+    $('.catalog-block__item').each((_, element) => {
+      const productName = $(element).find('.catalog-block__info-title a span').text().trim();
+      const priceText = $(element).find('.price__new-val').text().trim().replace(/[^\d]/g, '');
+      const price = parseFloat(priceText) || 0;
+      const productUrl = 'https://forcecom.kz' + $(element).find('.catalog-block__info-title a').attr('href');
+      const image = $(element).find('.section-gallery-wrapper__item.active img').attr('src');
+
+      if (productName && price && productUrl && image && isPartialMatch(name, productName)) {
+        console.log(`Found item on Forcecom: ${productName}, Price: ${price}, URL: ${productUrl}`);
+        product = {
+          name: productName,
+          price,
+          url: productUrl,
+          image: image.startsWith('http') ? image : `https://forcecom.kz${image}`
+        };
+        return false; // Break the .each() loop after finding the first matching product
+      }
+    });
+
+    if (product) {
+      return [product];
+    } else {
+      console.log(`No matching products found on Forcecom for: ${name}`);
+      return [];
+    }
+  } catch (error) {
+    console.error(`Error fetching Forcecom search results for ${name}:`, error);
+    return [];
   }
 };
