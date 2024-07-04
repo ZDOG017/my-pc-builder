@@ -30,9 +30,12 @@ export const generateResponse = async (req: Request, res: Response) => {
     console.log('Received prompt:', prompt);
 
     const modelId = "gpt-4o";
-    const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability. 
+    const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability.
+    Make a research on the prices of the components and components themselves in Kazakhstan.
+    Look up the prices strictly in KZT.
     Suggest components that are commonly available and offer good value for money.
-    Prefer newer, widely available models over older or niche products. 
+    Prefer newer, widely available models over older or niche products.
+    IMPORTANT: Make a build that is accurately or closely matches the desired budget of the user and DONT comment on this. IMPORTANT: take the real time prices of the components from shop.kz, alfa.kz and forcecom.kz. 
     IMPORTANT: STRICTLY list only the component names, each on a separate line, without additional descriptions. DO NOT WRITE ANYTHING EXCEPT COMPONENT NAMES Also use components that are most popular in Kazakhstan's stores in June 2024. Before answering, check the prices today in Kazakhstan
     Example of the response:
     AMD Ryzen 5 3600
