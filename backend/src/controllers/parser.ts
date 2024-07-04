@@ -1,5 +1,3 @@
-// parser.ts
-
 import axios from 'axios';
 import cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
@@ -84,7 +82,7 @@ export const parseComponentByName = async (name: string): Promise<Product[]> => 
 };
 
 export const parseComponentFromShopKz = async (name: string): Promise<Product[]> => {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
 
   try {
