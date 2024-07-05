@@ -132,5 +132,3 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
     await browser.close();
   }
 };
-
-// Removed parseComponentFromForcecom function for now
