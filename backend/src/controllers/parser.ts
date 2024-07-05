@@ -39,12 +39,14 @@ function isPartialMatch(searchTerm: string, productName: string): boolean {
   return matchPercentage > 30;
 }
 
+const placeholderImage = 'https://via.placeholder.com/150?text=No+Image+Available';
+
 export const parseComponentByName = async (name: string): Promise<Product[]> => {
   try {
     const encodedName = encodeURIComponent(name);
     const url = `https://alfa.kz/q/${encodedName}`;
     console.log(`Fetching URL: ${url}`);
-    const response = await axios.get(url, { timeout: 10000 });
+    const response = await axios.get(url, { timeout: 30000 }); // Increased timeout to 30 seconds
     const $ = cheerio.load(response.data);
 
     const productElements = $('.col-12.col-sm-3.image-holder');
@@ -58,7 +60,7 @@ export const parseComponentByName = async (name: string): Promise<Product[]> => 
       const priceText = productElement.find('.price-container meta[itemprop="price"]').attr('content');
       const price = parseFloat(priceText || '0');
       const productUrl = productElement.find('h2 a').attr('href');
-      const image = $(element).find('img').attr('src');
+      const image = $(element).find('img').attr('src') || placeholderImage;
 
       if (productName && price && productUrl && image && isPartialMatch(name, productName)) {
         console.log(`Found item: ${productName}, Price: ${price}, URL: ${productUrl}, Image: ${image}`);
@@ -91,11 +93,11 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
     const url = `https://shop.kz/search/?q=${encodedName}`;
     console.log(`Fetching Shop.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: 'networkidle0' });
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 }); // Increased Puppeteer timeout
 
-    await page.waitForSelector('.multisearch-page__product', { timeout: 10000 });
+    await page.waitForSelector('.multisearch-page__product', { timeout: 30000 }); // Increased timeout for selector
 
-    const product: Product | null = await page.evaluate((searchTerm) => {
+    const product: Product | null = await page.evaluate((searchTerm, placeholderImage) => {
       const element = document.querySelector('.multisearch-page__product');
       if (element) {
         const productData = element.getAttribute('data-product');
@@ -105,7 +107,7 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
             const productName = parsedData.name;
             const price = parseFloat(parsedData.price);
             const productUrl = `https://shop.kz${element.querySelector('.product-item-title a')?.getAttribute('href')}`;
-            const image = element.querySelector('.img-centered img')?.getAttribute('src') || 'https://via.placeholder.com/150?text=No+Image+Available';
+            const image = element.querySelector('.img-centered img')?.getAttribute('src') || placeholderImage;
 
             return { name: productName, price, url: productUrl, image };
           } catch (parseError) {
@@ -114,7 +116,7 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
         }
       }
       return null;
-    }, searchTerm);
+    }, searchTerm, placeholderImage);
 
     if (product && isPartialMatch(name, product.name)) {
       console.log(`Found product from Shop.kz search for ${name}:`, product);
