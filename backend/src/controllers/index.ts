@@ -1,9 +1,7 @@
-// index.ts
-
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import { parseComponentByName, parseComponentFromShopKz, parseComponentFromForcecom } from './parser';
+import { parseComponentByName, parseComponentFromShopKz } from './parser';
 
 dotenv.config();
 
@@ -63,15 +61,13 @@ export const generateResponse = async (req: Request, res: Response) => {
       components.map(async (component) => {
         try {
           console.log(`Fetching products for component: ${component}`);
-          const [alfaProducts, shopKzProducts, forcecomProducts] = await Promise.all([
+          const [alfaProducts, shopKzProducts] = await Promise.all([
             parseComponentByName(component),
-            parseComponentFromShopKz(component),
-            parseComponentFromForcecom(component)
+            parseComponentFromShopKz(component)
           ]);
           console.log(`Alfa products for ${component}:`, alfaProducts.length);
           console.log(`Shop.kz products for ${component}:`, shopKzProducts.length);
-          console.log(`Forcecom products for ${component}:`, forcecomProducts.length);
-          const allProducts = [...alfaProducts, ...shopKzProducts, ...forcecomProducts];
+          const allProducts = [...alfaProducts, ...shopKzProducts];
           console.log(`Total products found for ${component}:`, allProducts.length);
           const cheapestProduct = allProducts.sort((a, b) => a.price - b.price)[0] || null;
           console.log(`Cheapest product for ${component}:`, cheapestProduct);

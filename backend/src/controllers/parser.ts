@@ -131,45 +131,4 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
   }
 };
 
-export const parseComponentFromForcecom = async (name: string): Promise<Product[]> => {
-  try {
-    const searchTerm = generateSearchTerm(name);
-    const encodedName = encodeURIComponent(searchTerm);
-    const url = `https://forcecom.kz/catalog/?q=${encodedName}&type=catalog&s=Найти`;
-    console.log(`Fetching Forcecom search URL: ${url}`);
-
-    const response = await axios.get(url, { timeout: 10000 });
-    const $ = cheerio.load(response.data);
-
-    let product: Product | null = null;
-
-    $('.catalog-block__item').each((_, element) => {
-      const productName = $(element).find('.catalog-block__info-title a span').text().trim();
-      const priceText = $(element).find('.price__new-val').text().trim().replace(/[^\d]/g, '');
-      const price = parseFloat(priceText) || 0;
-      const productUrl = 'https://forcecom.kz' + $(element).find('.catalog-block__info-title a').attr('href');
-      const image = $(element).find('.section-gallery-wrapper__item.active img').attr('src');
-
-      if (productName && price && productUrl && image && isPartialMatch(name, productName)) {
-        console.log(`Found item on Forcecom: ${productName}, Price: ${price}, URL: ${productUrl}`);
-        product = {
-          name: productName,
-          price,
-          url: productUrl,
-          image: image.startsWith('http') ? image : `https://forcecom.kz${image}`
-        };
-        return false; // Break the .each() loop after finding the first matching product
-      }
-    });
-
-    if (product) {
-      return [product];
-    } else {
-      console.log(`No matching products found on Forcecom for: ${name}`);
-      return [];
-    }
-  } catch (error) {
-    console.error(`Error fetching Forcecom search results for ${name}:`, error);
-    return [];
-  }
-};
+// Removed parseComponentFromForcecom function for now
