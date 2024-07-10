@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import LottieLoader from '../components/Loader'; // make sure the path is correct
 
 interface Message {
   text: string;
@@ -17,12 +18,6 @@ interface Product {
 interface ChatComponentProps {
   initialPrompt: string;
 }
-
-const Loader = () => (
-  <div className="flex justify-center items-center">
-    <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
-  </div>
-);
 
 const MessageContent = ({ content }: { content: string }) => {
   const formattedContent = content.split('\n').map((line, index) => {
@@ -116,6 +111,7 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
 
   return (
     <div className="max-w-6xl mx-auto bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl rounded-lg overflow-hidden border border-gray-700">
+      {loading && <LottieLoader />}
       <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white p-4">
         <h2 className="text-2xl font-bold">Чат с ИИ-ассистентом</h2>
       </div>
@@ -127,11 +123,6 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
             </div>
           </div>
         ))}
-        {loading && (
-          <div className="mb-4 text-center">
-            <Loader />
-          </div>
-        )}
         <div ref={chatEndRef} />
       </div>
       <form onSubmit={(e) => handleSendMessage(e)} className="p-4 bg-gray-900 border-t border-gray-700">
