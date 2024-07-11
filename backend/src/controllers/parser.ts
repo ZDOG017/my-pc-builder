@@ -46,7 +46,7 @@ export const parseComponentByName = async (name: string): Promise<Product[]> => 
     const encodedName = encodeURIComponent(name);
     const url = `https://alfa.kz/q/${encodedName}`;
     console.log(`Fetching URL: ${url}`);
-    const response = await axios.get(url, { timeout: 30000 }); // Increased timeout to 30 seconds
+    const response = await axios.get(url, { timeout: 60000 }); // Increased timeout to 30 seconds
     const $ = cheerio.load(response.data);
 
     const productElements = $('.col-12.col-sm-3.image-holder');
@@ -95,7 +95,7 @@ export const parseComponentFromShopKz = async (name: string): Promise<Product[]>
 
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 }); // Increased Puppeteer timeout
 
-    await page.waitForSelector('.multisearch-page__product', { timeout: 30000 }); // Increased timeout for selector
+    await page.waitForSelector('.multisearch-page__product', { timeout: 60000 }); // Increased timeout for selector
 
     const product: Product | null = await page.evaluate((searchTerm, placeholderImage) => {
       const element = document.querySelector('.multisearch-page__product');

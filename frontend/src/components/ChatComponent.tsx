@@ -84,7 +84,7 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     try {
       setLoading(true);
       console.log('Sending message:', message);
-      const response = await axios.post('https://my-pc-builder-production.up.railway.app/api/generate', { prompt: message }, {
+      const response = await axios.post('https://my-pc-builder.onrender.com/api/generate', { prompt: message }, {
         headers: {
           'Content-Type': 'application/json',
         }
