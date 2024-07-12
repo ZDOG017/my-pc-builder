@@ -84,7 +84,7 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     try {
       setLoading(true);
       console.log('Sending message:', message);
-      const response = await axios.post('https://my-pc-builder-production.up.railway.app/api/generate', { prompt: message }, {
+      const response = await axios.post('http://localhost:5000/api/generate', { prompt: message }, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -93,9 +93,13 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
       const botMessage = { text: response.data.response, isUser: false };
       setMessages(prevMessages => [...prevMessages, botMessage]);
 
+      // Transform products object into an array
+      const productsArray = Object.values(response.data.products) as Product[];
+
       // Update products list
-      if (response.data.products) {
-        setProducts(response.data.products);
+      if (productsArray.length > 0) {
+        setProducts(productsArray);
+        console.log('Updated products:', productsArray);
       }
     } catch (error) {
       console.error('Error sending message to API:', error);

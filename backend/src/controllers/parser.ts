@@ -46,7 +46,7 @@ export const parseComponentByName = async (name: string): Promise<Product[]> => 
     const encodedName = encodeURIComponent(name);
     const url = `https://alfa.kz/q/${encodedName}`;
     console.log(`Fetching URL: ${url}`);
-    const response = await axios.get(url, { timeout: 60000 }); // Increased timeout to 30 seconds
+    const response = await axios.get(url, { timeout: 60000 }); // Increased timeout to 60 seconds
     const $ = cheerio.load(response.data);
 
     const productElements = $('.col-12.col-sm-3.image-holder');

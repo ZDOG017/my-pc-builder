@@ -27,18 +27,25 @@ export const generateResponse = async (req: Request, res: Response) => {
     const { prompt } = req.body;
     console.log('Received prompt:', prompt);
 
-    const modelId = "gpt-4o";
+    const modelId = "gpt-4";
     const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability.
     Make a research on the prices of the components and components themselves in Kazakhstan.
     Look up the prices strictly in KZT.
     Suggest components that are commonly available and offer good value for money.
     Prefer newer, widely available models over older or niche products.
-    IMPORTANT: Make a build that is accurately or closely matches the desired budget of the user and DONT comment on this. IMPORTANT: take the real time prices of the components from shop.kz, alfa.kz and forcecom.kz. 
-    IMPORTANT: STRICTLY list only the component names, each on a separate line, without additional descriptions. DO NOT WRITE ANYTHING EXCEPT COMPONENT NAMES Also use components that are most popular in Kazakhstan's stores in June 2024. Before answering, check the prices today in Kazakhstan
+    IMPORTANT: Make a build that accurately or closely matches the desired budget of the user and DON'T comment on this. IMPORTANT: take the real-time prices of the components from shop.kz, alfa.kz, and forcecom.kz. 
+    IMPORTANT: STRICTLY list only the component names in JSON format, with each component type as a key and the component name as the value. DO NOT WRITE ANYTHING EXCEPT THE JSON. The response must include exactly these components: CPU, GPU, Motherboard, RAM, PSU, CPU Cooler, FAN, PC case. Use components that are most popular in Kazakhstan's stores in June 2024. Before answering, check the prices today in Kazakhstan.
     Example of the response:
-    AMD Ryzen 5 3600
-    Asus PRIME B450M-K
-    Gigabyte GeForce GTX 1660 SUPER OC`;
+    {
+      "CPU": "AMD Ryzen 5 3600",
+      "GPU": "Gigabyte GeForce GTX 1660 SUPER OC",
+      "Motherboard": "Asus PRIME B450M-K",
+      "RAM": "Corsair Vengeance LPX 16GB",
+      "PSU": "EVGA 600 W1",
+      "CPU Cooler": "Cooler Master Hyper 212",
+      "FAN": "Noctua NF-P12",
+      "PC case": "NZXT H510"
+    }`;
 
     const currentMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
@@ -55,10 +62,23 @@ export const generateResponse = async (req: Request, res: Response) => {
     const responseText = result.choices[0].message?.content || '';
     console.log('Received response from OpenAI: \n', responseText);
 
-    const components = responseText.split('\n').map(line => line.trim()).filter(line => line);
+    let components;
+    try {
+      components = JSON.parse(responseText);
+    } catch (error) {
+      throw new Error('Failed to parse JSON response from OpenAI');
+    }
+
+    const requiredComponents = ["CPU", "GPU", "Motherboard", "RAM", "PSU", "CPU Cooler", "FAN", "PC case"];
+    const componentKeys = Object.keys(components);
+
+    if (!requiredComponents.every(comp => componentKeys.includes(comp))) {
+      throw new Error('OpenAI response is missing one or more required components');
+    }
 
     const fetchedProducts = await Promise.all(
-      components.map(async (component) => {
+      requiredComponents.map(async (key) => {
+        const component = components[key];
         try {
           console.log(`Fetching products for component: ${component}`);
           const [alfaProducts, shopKzProducts] = await Promise.all([
@@ -71,18 +91,25 @@ export const generateResponse = async (req: Request, res: Response) => {
           console.log(`Total products found for ${component}:`, allProducts.length);
           const cheapestProduct = allProducts.sort((a, b) => a.price - b.price)[0] || null;
           console.log(`Cheapest product for ${component}:`, cheapestProduct);
-          return cheapestProduct;
+          return { key, product: cheapestProduct };
         } catch (err) {
           console.error('Error fetching product:', component, err);
-          return null;
+          return { key, product: null };
         }
       })
     );
 
-    const availableProducts = fetchedProducts.filter((product): product is Product => product !== null);
+    const availableProducts = fetchedProducts.filter(({ product }) => product !== null);
     console.log('Available products after filtering:', availableProducts.length);
 
-    res.send({ response: responseText, products: availableProducts });
+    const productResponse = availableProducts.reduce((acc, { key, product }) => {
+      if (product) {
+        acc[key] = product;
+      }
+      return acc;
+    }, {} as Record<string, Product>);
+
+    res.send({ response: responseText, products: productResponse });
 
   } catch (err) {
     console.error('Error in generateResponse:', err);
