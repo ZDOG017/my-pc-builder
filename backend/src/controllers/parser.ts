@@ -1,5 +1,3 @@
-import axios from 'axios';
-import cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
 
 interface Product {
@@ -7,128 +5,78 @@ interface Product {
   price: number;
   url: string;
   image: string;
+  rating: string;
+  reviewCount: number;
 }
 
-const generateSearchTerm = (name: string): string => {
-  const words = name.split(' ');
-  const searchWords = words.slice(0, 3);
-  return searchWords.join(' ');
-};
-
-function isPartialMatch(searchTerm: string, productName: string): boolean {
-  const cleanSearchTerm = searchTerm.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-  const cleanProductName = productName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-
-  const searchWords = cleanSearchTerm.split(/\s+/);
-  const productWords = cleanProductName.split(/\s+/);
-
-  const ignoreWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'gb', 'tb', 'мб', 'гб', 'тб'];
-
-  const isImportantWord = (word: string) => !ignoreWords.includes(word) && word.length > 1;
-
-  const importantSearchWords = searchWords.filter(isImportantWord);
-
-  const matchCount = importantSearchWords.filter(searchWord => 
-    productWords.some(productWord => 
-      productWord.includes(searchWord) || searchWord.includes(productWord)
-    )
-  ).length;
-
-  const matchPercentage = (matchCount / importantSearchWords.length) * 100;
-
-  return matchPercentage > 30;
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const placeholderImage = 'https://via.placeholder.com/150?text=No+Image+Available';
-
-export const parseComponentByName = async (name: string): Promise<Product[]> => {
-  try {
-    const encodedName = encodeURIComponent(name);
-    const url = `https://alfa.kz/q/${encodedName}`;
-    console.log(`Fetching URL: ${url}`);
-    const response = await axios.get(url, { timeout: 60000 }); // Increased timeout to 60 seconds
-    const $ = cheerio.load(response.data);
-
-    const productElements = $('.col-12.col-sm-3.image-holder');
-    let product: Product | null = null;
-    
-    for (let i = 0; i < productElements.length; i++) {
-      const element = productElements[i];
-      const productElement = $(element).next('.col-12.col-sm-9.body-holder');
-      
-      const productName = productElement.find('h2 a span[itemprop="name"]').text().trim();
-      const priceText = productElement.find('.price-container meta[itemprop="price"]').attr('content');
-      const price = parseFloat(priceText || '0');
-      const productUrl = productElement.find('h2 a').attr('href');
-      const image = $(element).find('img').attr('src') || placeholderImage;
-
-      if (productName && price && productUrl && image && isPartialMatch(name, productName)) {
-        console.log(`Found item: ${productName}, Price: ${price}, URL: ${productUrl}, Image: ${image}`);
-        product = {
-          name: productName,
-          price,
-          url: productUrl,
-          image: image.startsWith('http') ? image : `https://alfa.kz${image}`
-        };
-        break; // Exit the loop after finding the first matching product
-      }
-    }
-    
-    return product ? [product] : [];
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error(`Error fetching URL for ${name}. Error: ${error.message}`);
-    }
-    return [];
-  }
-};
-
-export const parseComponentFromShopKz = async (name: string): Promise<Product[]> => {
-  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+export async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
+  const browser = await puppeteer.launch({ headless: "new" as unknown as boolean });
   const page = await browser.newPage();
 
   try {
-    const searchTerm = generateSearchTerm(name);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    
+    await delay(Math.floor(Math.random() * 3000) + 1000); // Delay from 1 to 4 seconds
+
     const encodedName = encodeURIComponent(searchTerm);
-    const url = `https://shop.kz/search/?q=${encodedName}`;
-    console.log(`Fetching Shop.kz search URL: ${url}`);
+    const url = `https://kaspi.kz/shop/search/?text=${encodedName}&hint_chips_click=false`;
+    console.log(`Fetching Kaspi.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 }); // Increased Puppeteer timeout
+    await page.goto(url, { waitUntil: 'networkidle2' });
 
-    await page.waitForSelector('.multisearch-page__product', { timeout: 60000 }); // Increased timeout for selector
+    const products = await page.evaluate(() => {
+      const productElements = document.querySelectorAll('.item-card');
+      const products: Product[] = [];
 
-    const product: Product | null = await page.evaluate((searchTerm, placeholderImage) => {
-      const element = document.querySelector('.multisearch-page__product');
-      if (element) {
-        const productData = element.getAttribute('data-product');
-        if (productData) {
-          try {
-            const parsedData = JSON.parse(productData);
-            const productName = parsedData.name;
-            const price = parseFloat(parsedData.price);
-            const productUrl = `https://shop.kz${element.querySelector('.product-item-title a')?.getAttribute('href')}`;
-            const image = element.querySelector('.img-centered img')?.getAttribute('src') || placeholderImage;
+      productElements.forEach((element, index) => {
+        if (index >= 3) return; // Limit to 3 matching products
 
-            return { name: productName, price, url: productUrl, image };
-          } catch (parseError) {
-            console.error('Error parsing product data:', parseError);
-          }
+        const nameElement = element.querySelector('.item-card__name-link');
+        const priceElement = element.querySelector('.item-card__prices-price');
+        const imageElement = element.querySelector('.item-card__image') as HTMLImageElement;
+        const ratingElement = element.querySelector('.rating');
+        const reviewCountElement = element.querySelector('.item-card__rating a');
+
+        if (nameElement && priceElement && imageElement) {
+          const name = nameElement.textContent?.trim() || '';
+          const priceText = priceElement.textContent?.trim().replace(/[^\d]/g, '') || '0';
+          const price = parseFloat(priceText) || 0;
+          const url = 'https://kaspi.kz' + (nameElement.getAttribute('href') || '');
+          const image = imageElement.src || '';
+
+          const ratingClass = ratingElement?.getAttribute('class') || '';
+          const ratingMatch = ratingClass.match(/\*(\d+)/);
+          const rating = ratingMatch ? (parseInt(ratingMatch[1]) / 10).toFixed(1) : '0.0';
+
+          const reviewCountText = reviewCountElement?.textContent?.trim() || '';
+          const reviewCountMatch = reviewCountText.match(/\d+/);
+          const reviewCount = reviewCountMatch ? parseInt(reviewCountMatch[0]) : 0;
+
+          products.push({
+            name,
+            price,
+            url,
+            image,
+            rating,
+            reviewCount
+          });
         }
-      }
-      return null;
-    }, searchTerm, placeholderImage);
+      });
 
-    if (product && isPartialMatch(name, product.name)) {
-      console.log(`Found product from Shop.kz search for ${name}:`, product);
-      return [product];
-    }
+      return products;
+    });
 
-    console.log(`No matching products found from Shop.kz search for ${name}`);
-    return [];
+    return products;
   } catch (error) {
-    console.error(`Error fetching Shop.kz search results for ${name}:`, error);
+    if (error instanceof Error) {
+      console.error(`Error fetching URL for ${searchTerm} from Kaspi.kz. Error: ${error.message}`);
+    }
     return [];
   } finally {
     await browser.close();
   }
-};
+}

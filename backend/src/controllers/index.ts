@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import { parseComponentByName, parseComponentFromShopKz } from './parser';
+import { parseComponentFromKaspiKz } from './parser';
 
 dotenv.config();
 
@@ -20,12 +20,15 @@ interface Product {
   price: number;
   url: string;
   image: string;
+  rating: string;
+  reviewCount: number;
 }
 
 export const generateResponse = async (req: Request, res: Response) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, budget } = req.body;
     console.log('Received prompt:', prompt);
+    console.log('Budget:', budget);
 
     const modelId = "gpt-4";
     const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability.
@@ -33,8 +36,8 @@ export const generateResponse = async (req: Request, res: Response) => {
     Look up the prices strictly in KZT.
     Suggest components that are commonly available and offer good value for money.
     Prefer newer, widely available models over older or niche products.
-    IMPORTANT: Make a build that accurately or closely matches the desired budget of the user and DON'T comment on this. IMPORTANT: take the real-time prices of the components from shop.kz, alfa.kz, and forcecom.kz. 
-    IMPORTANT: STRICTLY list only the component names in JSON format, with each component type as a key and the component name as the value. DO NOT WRITE ANYTHING EXCEPT THE JSON. The response must include exactly these components: CPU, GPU, Motherboard, RAM, PSU, CPU Cooler, FAN, PC case. Use components that are most popular in Kazakhstan's stores in June 2024. Before answering, check the prices today in Kazakhstan.
+    IMPORTANT: Make a build that accurately or closely matches the desired budget of the user and DON'T comment on this. IMPORTANT: take the real-time prices of the components from kaspi.kz. 
+    IMPORTANT: Dont write anything except JSON Format. STRICTLY list only the component names in JSON format, with each component type as a key and the component name as the value. DO NOT WRITE ANYTHING EXCEPT THE JSON. The response must include exactly these components: CPU, GPU, Motherboard, RAM, PSU, CPU Cooler, FAN, PC case. Use components that are most popular in Kazakhstan's stores in July 2024. Before answering, check the prices today in Kazakhstan.
     Example of the response:
     {
       "CPU": "AMD Ryzen 5 3600",
@@ -49,7 +52,7 @@ export const generateResponse = async (req: Request, res: Response) => {
 
     const currentMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: prompt }
+      { role: "user", content: `${prompt} The budget for this build is ${budget} KZT.` }
     ];
 
     console.log('Sending messages to OpenAI:', currentMessages);
@@ -81,15 +84,9 @@ export const generateResponse = async (req: Request, res: Response) => {
         const component = components[key];
         try {
           console.log(`Fetching products for component: ${component}`);
-          const [alfaProducts, shopKzProducts] = await Promise.all([
-            parseComponentByName(component),
-            parseComponentFromShopKz(component)
-          ]);
-          console.log(`Alfa products for ${component}:`, alfaProducts.length);
-          console.log(`Shop.kz products for ${component}:`, shopKzProducts.length);
-          const allProducts = [...alfaProducts, ...shopKzProducts];
-          console.log(`Total products found for ${component}:`, allProducts.length);
-          const cheapestProduct = allProducts.sort((a, b) => a.price - b.price)[0] || null;
+          const kaspiProducts = await parseComponentFromKaspiKz(component);
+          console.log(`Kaspi products for ${component}:`, kaspiProducts.length);
+          const cheapestProduct = kaspiProducts.sort((a, b) => a.price - b.price)[0] || null;
           console.log(`Cheapest product for ${component}:`, cheapestProduct);
           return { key, product: cheapestProduct };
         } catch (err) {
@@ -102,12 +99,72 @@ export const generateResponse = async (req: Request, res: Response) => {
     const availableProducts = fetchedProducts.filter(({ product }) => product !== null);
     console.log('Available products after filtering:', availableProducts.length);
 
-    const productResponse = availableProducts.reduce((acc, { key, product }) => {
+    const missingComponents = fetchedProducts
+      .filter(({ product }) => product === null)
+      .map(({ key }) => key);
+
+    let productResponse = availableProducts.reduce((acc, { key, product }) => {
       if (product) {
         acc[key] = product;
       }
       return acc;
     }, {} as Record<string, Product>);
+
+    // Calculate total price
+    const totalPrice = Object.values(productResponse).reduce((sum, product) => sum + product.price, 0);
+
+    // If there are missing components or the total price is not within 10% of the budget, ask OpenAI for adjustments
+    if (missingComponents.length > 0 || Math.abs(totalPrice - budget) / budget > 0.1) {
+      const adjustmentPrompt = `The following components were not found or the total price (${totalPrice} KZT) is not within 10% of the budget (${budget} KZT):
+      ${missingComponents.join(', ')}
+      Please suggest alternatives for the missing components and adjust the build to be closer to the budget while maintaining performance. STRICTLY: Provide your response in the same JSON format as before.`;
+
+      const adjustmentMessages: ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: adjustmentPrompt }
+      ];
+
+      const adjustmentResult = await openai.chat.completions.create({
+        model: modelId,
+        messages: adjustmentMessages,
+      });
+
+      const adjustedResponseText = adjustmentResult.choices[0].message?.content || '';
+      console.log('Received adjusted response from OpenAI: \n', adjustedResponseText);
+
+      try {
+        const adjustedComponents = JSON.parse(adjustedResponseText);
+        
+        // Fetch products for adjusted components
+        const adjustedFetchedProducts = await Promise.all(
+          Object.entries(adjustedComponents).map(async ([key, component]) => {
+            if (typeof component === 'string') {
+              try {
+                console.log(`Fetching products for adjusted component: ${component}`);
+                const kaspiProducts = await parseComponentFromKaspiKz(component);
+                console.log(`Kaspi products for ${component}:`, kaspiProducts.length);
+                const cheapestProduct = kaspiProducts.sort((a, b) => a.price - b.price)[0] || null;
+                console.log(`Cheapest product for ${component}:`, cheapestProduct);
+                return { key, product: cheapestProduct };
+              } catch (err) {
+                console.error('Error fetching adjusted product:', component, err);
+                return { key, product: null };
+              }
+            }
+            return { key, product: null };
+          })
+        );
+
+        // Merge adjusted products with original products
+        adjustedFetchedProducts.forEach(({ key, product }) => {
+          if (product) {
+            productResponse[key] = product;
+          }
+        });
+      } catch (error) {
+        console.error('Failed to parse adjusted JSON response from OpenAI:', error);
+      }
+    }
 
     res.send({ response: responseText, products: productResponse });
 
