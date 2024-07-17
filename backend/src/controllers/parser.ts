@@ -101,3 +101,6 @@ export async function fetchProduct(searchTerm: string) {
 }
 
 export { parseComponentFromKaspiKz };
+
+
+//is it all computer components

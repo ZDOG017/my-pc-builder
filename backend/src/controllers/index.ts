@@ -30,10 +30,6 @@ export const generateResponse = async (req: Request, res: Response) => {
     console.log('Received prompt:', prompt);
     console.log('Budget:', budget);
 
-    // if (!budget) {
-    //   throw new Error('Budget is undefined');
-    // }
-
     const modelId = "gpt-4o";
     const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability.
     Make a research on the prices of the components and components themselves in Kazakhstan.
@@ -42,7 +38,8 @@ export const generateResponse = async (req: Request, res: Response) => {
     Prefer newer, widely available models over older or niche products.
     IMPORTANT: Make a build that accurately or closely matches the desired budget of the user and DON'T comment on this. IMPORTANT: take the real-time prices of the components from kaspi.kz. 
     IMPORTANT: Dont write anything except JSON Format. STRICTLY list only the component names in JSON format, with each component type as a key and the component name as the value. DO NOT WRITE ANYTHING EXCEPT THE JSON. The response must include exactly these components: CPU, GPU, Motherboard, RAM, PSU, CPU Cooler, FAN, PC case. Use components that are most popular in Kazakhstan's stores in July 2024. Before answering, check the prices today in Kazakhstan.
-    IMPORTANT: please dont send '''json {code} ''' Please choose pricier gpu and cpu. Main budget should be focused on GPU. if Cooler Master dont write Cooler please. Dont suggest anything with NF in it.
+    IMPORTANT: please dont send '''json {code} '''
+    IMPORTANT: Please choose pricier gpu and cpu. Main budget should be focused on GPU.
     Example of the response:
     {
       "CPU": "AMD Ryzen 5 3600",
@@ -118,9 +115,13 @@ export const generateResponse = async (req: Request, res: Response) => {
 
     // If there are missing components or the total price is not within 10% of the budget, ask OpenAI for adjustments
     if (missingComponents.length > 0 || Math.abs(totalPrice - budget) / budget > 0.1) {
+      const componentsWithPrices = Object.entries(productResponse)
+        .map(([key, product]) => `${key}: ${product.name} - ${product.price} KZT`)
+        .join(', ');
+
       const adjustmentPrompt = `The following components were not found or the total price (${totalPrice} KZT) is not within 10% of the budget (${budget} KZT):
-      ${missingComponents.join(', ')}
-      Please suggest alternatives for the missing components and adjust the build to be closer to the budget while maintaining performance. STRICTLY: Provide your response in the same JSON format as before.`;
+      ${missingComponents.join(', ')}. Current components and prices: ${componentsWithPrices}.
+      Please suggest alternatives for the missing components and adjust the build to be closer to the budget while maintaining performance. STRICTLY: Provide your response in the same JSON format as before. Ensure the total cost does not exceed the budget and remains within 10% of the budget.`;
 
       const adjustmentMessages: ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt },

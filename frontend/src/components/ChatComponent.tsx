@@ -17,6 +17,7 @@ interface Product {
 
 interface ChatComponentProps {
   initialPrompt: string;
+  budget: number; // Добавлен проп для бюджета
 }
 
 const MessageContent = ({ content }: { content: string }) => {
@@ -54,7 +55,7 @@ const ProductList = ({ products }: { products: Product[] }) => (
   </div>
 );
 
-export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
+export default function ChatComponent({ initialPrompt, budget }: ChatComponentProps) { // Проп для бюджета
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,7 +85,7 @@ export default function ChatComponent({ initialPrompt }: ChatComponentProps) {
     try {
       setLoading(true);
       console.log('Sending message:', message);
-      const response = await axios.post('http://localhost:5000/api/generate', { prompt: message }, {
+      const response = await axios.post('http://localhost:5000/api/generate', { prompt: message, budget }, { // Включение бюджета в запрос
         headers: {
           'Content-Type': 'application/json',
         }
