@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import stringSimilarity from 'string-similarity';
 
 interface Product {
   name: string;
@@ -13,8 +14,8 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
-  const browser = await puppeteer.launch({ headless: "new" as unknown as boolean });
+async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
   try {
@@ -26,7 +27,7 @@ export async function parseComponentFromKaspiKz(searchTerm: string): Promise<Pro
     const url = `https://kaspi.kz/shop/search/?text=${encodedName}&hint_chips_click=false`;
     console.log(`Fetching Kaspi.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(url, { waitUntil: ['networkidle2','domcontentloaded','load','networkidle0'] });
 
     const products = await page.evaluate(() => {
       const productElements = document.querySelectorAll('.item-card');
@@ -34,6 +35,7 @@ export async function parseComponentFromKaspiKz(searchTerm: string): Promise<Pro
 
       productElements.forEach((element, index) => {
         if (index >= 3) return; // Limit to 3 matching products
+        
 
         const nameElement = element.querySelector('.item-card__name-link');
         const priceElement = element.querySelector('.item-card__prices-price');
@@ -80,3 +82,22 @@ export async function parseComponentFromKaspiKz(searchTerm: string): Promise<Pro
     await browser.close();
   }
 }
+
+function findBestMatch(searchTerm: string, products: Product[]): Product | null {
+  if (products.length === 0) return null;
+
+  const productNames = products.map(product => product.name);
+  const { bestMatch } = stringSimilarity.findBestMatch(searchTerm, productNames);
+
+  const bestMatchIndex = productNames.indexOf(bestMatch.target);
+  return products[bestMatchIndex] || null;
+}
+
+// Export the fetchProduct function and ensure no redeclaration of parseComponentFromKaspiKz
+export async function fetchProduct(searchTerm: string) {
+  const products = await parseComponentFromKaspiKz(searchTerm);
+  const bestMatch = findBestMatch(searchTerm, products);
+  return bestMatch;
+}
+
+export { parseComponentFromKaspiKz };

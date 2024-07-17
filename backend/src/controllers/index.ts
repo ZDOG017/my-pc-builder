@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import { parseComponentFromKaspiKz } from './parser';
+import { fetchProduct } from './parser';
 
 dotenv.config();
 
@@ -30,7 +30,11 @@ export const generateResponse = async (req: Request, res: Response) => {
     console.log('Received prompt:', prompt);
     console.log('Budget:', budget);
 
-    const modelId = "gpt-4";
+    // if (!budget) {
+    //   throw new Error('Budget is undefined');
+    // }
+
+    const modelId = "gpt-4o";
     const systemPrompt = `You are an assistant helping to build PCs with a focus on speed, affordability, and reliability.
     Make a research on the prices of the components and components themselves in Kazakhstan.
     Look up the prices strictly in KZT.
@@ -38,6 +42,7 @@ export const generateResponse = async (req: Request, res: Response) => {
     Prefer newer, widely available models over older or niche products.
     IMPORTANT: Make a build that accurately or closely matches the desired budget of the user and DON'T comment on this. IMPORTANT: take the real-time prices of the components from kaspi.kz. 
     IMPORTANT: Dont write anything except JSON Format. STRICTLY list only the component names in JSON format, with each component type as a key and the component name as the value. DO NOT WRITE ANYTHING EXCEPT THE JSON. The response must include exactly these components: CPU, GPU, Motherboard, RAM, PSU, CPU Cooler, FAN, PC case. Use components that are most popular in Kazakhstan's stores in July 2024. Before answering, check the prices today in Kazakhstan.
+    IMPORTANT: please dont send '''json {code} ''' Please choose pricier gpu and cpu. Main budget should be focused on GPU. if Cooler Master dont write Cooler please. Dont suggest anything with NF in it.
     Example of the response:
     {
       "CPU": "AMD Ryzen 5 3600",
@@ -84,11 +89,9 @@ export const generateResponse = async (req: Request, res: Response) => {
         const component = components[key];
         try {
           console.log(`Fetching products for component: ${component}`);
-          const kaspiProducts = await parseComponentFromKaspiKz(component);
-          console.log(`Kaspi products for ${component}:`, kaspiProducts.length);
-          const cheapestProduct = kaspiProducts.sort((a, b) => a.price - b.price)[0] || null;
-          console.log(`Cheapest product for ${component}:`, cheapestProduct);
-          return { key, product: cheapestProduct };
+          const bestMatchProduct = await fetchProduct(component);
+          console.log(`Best match product for ${component}:`, bestMatchProduct);
+          return { key, product: bestMatchProduct };
         } catch (err) {
           console.error('Error fetching product:', component, err);
           return { key, product: null };
@@ -141,11 +144,9 @@ export const generateResponse = async (req: Request, res: Response) => {
             if (typeof component === 'string') {
               try {
                 console.log(`Fetching products for adjusted component: ${component}`);
-                const kaspiProducts = await parseComponentFromKaspiKz(component);
-                console.log(`Kaspi products for ${component}:`, kaspiProducts.length);
-                const cheapestProduct = kaspiProducts.sort((a, b) => a.price - b.price)[0] || null;
-                console.log(`Cheapest product for ${component}:`, cheapestProduct);
-                return { key, product: cheapestProduct };
+                const bestMatchProduct = await fetchProduct(component);
+                console.log(`Best match product for adjusted ${component}:`, bestMatchProduct);
+                return { key, product: bestMatchProduct };
               } catch (err) {
                 console.error('Error fetching adjusted product:', component, err);
                 return { key, product: null };
