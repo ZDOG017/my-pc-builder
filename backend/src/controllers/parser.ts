@@ -15,7 +15,13 @@ function delay(ms: number) {
 }
 
 async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
-  const browser = await puppeteer.launch({ headless: true , args: ['--no-sandbox', '--disable-setuid-sandbox']});
+  const browser = await puppeteer.launch({ headless: true , args: ['--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-infobars',
+    '--window-position=0,0',
+    '--ignore-certifcate-errors',
+    '--ignore-certifcate-errors-spki-list',
+    '--user-agent=${userAgent}']});
   const page = await browser.newPage();
 
   try {
