@@ -32,7 +32,7 @@ export default function Header() {
     <header className={`fixed w-full bg-gray-900 text-white shadow-lg transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'} z-50`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-green-400">PC Builder AI</Link>
+          <Link href="/" className="text-2xl font-bold text-green-400">QuryltAI</Link>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">
               <li><Link href="/" className="text-gray-400 hover:text-green-500">Главная</Link></li>

@@ -9,19 +9,18 @@ export default function Footer() {
           </div>
           <div className="w-full md:w-1/3 mb-6 md:mb-0">
             <h3 className="text-lg font-semibold mb-2 text-green-400">Контакты</h3>
-            <p className="text-sm text-gray-300">Email: support@pcbuilderai.com</p>
+            <p className="text-sm text-gray-300">Email: iamkazakh02@gmail.com</p>
           </div>
           <div className="w-full md:w-1/3">
             <h3 className="text-lg font-semibold mb-2 text-green-400">Следите за нами</h3>
             <div className="flex space-x-4">
-              <a href="#" className="text-green-400 hover:text-green-300 transition-colors duration-300">Facebook</a>
-              <a href="#" className="text-green-400 hover:text-green-300 transition-colors duration-300">Twitter</a>
-              <a href="#" className="text-green-400 hover:text-green-300 transition-colors duration-300">Instagram</a>
+              <a target="_blank" href="https://web.telegram.org/k/#@zdog017" className="text-green-400 hover:text-green-300 transition-colors duration-300">Telegram</a>
+              <a target="_blank" href="https://www.instagram.com/qurylt.ai?igsh=MXhld2Z3Z2JrdXlyMw%3D%3D&utm_source=qr" className="text-green-400 hover:text-green-300 transition-colors duration-300">Instagram</a>
             </div>
           </div>
         </div>
         <div className="mt-8 text-center text-sm text-gray-300">
-          <p>&copy; 2024 PC Builder AI. Все права защищены.</p>
+          <p>&copy; 2024 QuryltAI. Все права защищены.</p>
         </div>
       </div>
     </footer>

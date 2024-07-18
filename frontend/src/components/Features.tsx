@@ -14,7 +14,7 @@ export default function Features() {
     },
     { 
       title: "Лучшие цены", 
-      description: "Анализируем предложения на AliExpress для вашей выгоды", 
+      description: "Анализируем предложения на Kaspi.kz для вашей выгоды", 
       icon: <CurrencyDollarIcon className="w-8 h-8 text-green-400" /> 
     },
     { 
