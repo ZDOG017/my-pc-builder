@@ -35,7 +35,7 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://https://my-pc-builder-production.up.railway.app/api/generate', { budget }, {
+      const response = await axios.post('https://my-pc-builder-production.up.railway.app/api/generate', { budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
