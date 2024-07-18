@@ -19,6 +19,7 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
     headless: true,
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-infobars', '--window-position=0,0', '--ignore-certifcate-errors', '--ignore-certifcate-errors-spki-list', '--user-agent=${userAgent}', '--disable-dev-shm-usage'],
+    ignoreDefaultArgs: ['--disable-extensions'],
     timeout:60000
   });
 
