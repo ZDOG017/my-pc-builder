@@ -121,7 +121,8 @@ export const generateResponse = async (req: Request, res: Response) => {
 
       const adjustmentPrompt = `The following components were not found or the total price (${totalPrice} KZT) is not within 10% of the budget (${budget} KZT):
       ${missingComponents.join(', ')}. Current components and prices: ${componentsWithPrices}.
-      Please suggest alternatives for the missing components and adjust the build to be closer to the budget while maintaining performance. STRICTLY: Provide your response in the same JSON format as before. Ensure the total cost does not exceed the budget and remains within 10% of the budget.`;
+      Please suggest alternatives for the missing components and adjust the build to be closer to the budget while maintaining performance. STRICTLY: Provide your response in the same JSON format as before. Ensure the total cost does not exceed the budget and remains within 10% of the budget.
+      And Also Please ensure that all components are real pc components because before parser could give me freezer or something random`;
 
       const adjustmentMessages: ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt },
@@ -168,10 +169,13 @@ export const generateResponse = async (req: Request, res: Response) => {
       }
     }
 
+    // Send the response and return immediately
     res.send({ response: responseText, products: productResponse });
+    return; // This ensures that the function stops executing after sending the response
 
   } catch (err) {
     console.error('Error in generateResponse:', err);
     res.status(500).json({ message: "Internal server error" });
+    return; // Also return here to ensure the function stops in case of an error
   }
 };

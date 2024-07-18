@@ -92,7 +92,7 @@ export default function ServicePage() {
                   <div className="flex items-center justify-center">
                     <button
                       type="submit"
-                      className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
+                      className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
                     >
                       Подобрать конфигурацию
                     </button>

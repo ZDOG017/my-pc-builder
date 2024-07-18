@@ -1,8 +1,9 @@
-// Change the file name from ChatComponent.tsx to ProductListComponent.tsx
+// ProductListComponent.tsx
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import LottieLoader from '../components/Loader'; // make sure the path is correct
+import LottieLoader from '../components/Loader';
+import ProductCard from './ProductCard';
 
 interface Product {
   image: string | undefined;
@@ -16,26 +17,10 @@ interface ProductListComponentProps {
 }
 
 const ProductList = ({ products }: { products: Product[] }) => (
-  <div className="mt-6">
-    <h3 className="text-xl font-bold text-green-400">Список доступных компонентов:</h3>
-    {products.length > 0 ? (
-      products.map((product, index) => (
-        <div key={index} className="p-4 my-4 border rounded-lg shadow-lg bg-gray-800 text-white">
-          <h4 className="text-lg font-bold">{product.name}</h4>
-          <p>Цена: {product.price > 0 ? `${product.price} тг` : 'Нет данных'}</p>
-          {product.url ? (
-            <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
-              Перейти к продукту
-            </a>
-          ) : (
-            <p>Ссылка недоступна</p>
-          )}
-          <img src={product.image} alt={product.name} className="mt-2 max-w-xs rounded-lg shadow-md" />
-        </div>
-      ))
-    ) : (
-      <p>К сожалению, не удалось найти доступные компоненты. Попробуйте изменить запрос.</p>
-    )}
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {products.map((product, index) => (
+      <ProductCard key={index} product={product} />
+    ))}
   </div>
 );
 
@@ -55,16 +40,8 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
           'Content-Type': 'application/json',
         }
       });
-      console.log('Received response:', response.data);
-
-      // Transform products object into an array
       const productsArray = Object.values(response.data.products) as Product[];
-
-      // Update products list
-      if (productsArray.length > 0) {
-        setProducts(productsArray);
-        console.log('Updated products:', productsArray);
-      }
+      setProducts(productsArray);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -72,20 +49,30 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
     }
   };
 
-  // Calculate total price of all products
   const totalPrice = products.reduce((sum, product) => sum + product.price, 0);
 
   return (
-    <div className="max-w-6xl mx-auto bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl rounded-lg overflow-hidden border border-gray-700">
+    <div className="bg-gray-900 shadow-2xl rounded-lg overflow-hidden">
       {loading && <LottieLoader />}
-      <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white p-4">
-        <h2 className="text-2xl font-bold">Список продуктов</h2>
+      <div className="bg-gradient-to-r from-green-500 to-blue-600 p-6">
+        <h2 className="text-3xl font-bold text-white">Каталог компонентов</h2>
+        <p className="text-gray-200 mt-2">Выберите компоненты для вашего ПК</p>
       </div>
-      <div className="p-6 bg-gray-900">
-        <ProductList products={products} />
+      <div className="p-6">
+        {products.length > 0 ? (
+          <ProductList products={products} />
+        ) : (
+          <p className="text-center text-gray-400">Нет доступных компонентов. Попробуйте изменить параметры поиска.</p>
+        )}
       </div>
-      <div className="p-4 bg-gray-800 border-t border-gray-700">
-        <h3 className="text-xl font-bold text-green-400">Итоговая стоимость: {totalPrice} тг</h3>
+      <div className="bg-gray-800 p-6 mt-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-2xl font-bold text-green-400">Итоговая стоимость:</h3>
+          <p className="text-2xl font-bold text-white">{totalPrice} тг</p>
+        </div>
+        {/* <button className="mt-4 w-full bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300 ease-in-out">
+          Оформить заказ
+        </button> */}
       </div>
     </div>
   );

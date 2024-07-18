@@ -47,7 +47,7 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
           const name = nameElement.textContent?.trim() || '';
           const priceText = priceElement.textContent?.trim().replace(/[^\d]/g, '') || '0';
           const price = parseFloat(priceText) || 0;
-          const url = 'https://kaspi.kz' + (nameElement.getAttribute('href') || '');
+          const url = nameElement.getAttribute('href') || '';
           const image = imageElement.src || '';
 
           const ratingClass = ratingElement?.getAttribute('class') || '';

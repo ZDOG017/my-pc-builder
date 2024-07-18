@@ -67,7 +67,7 @@ export default function GameSelection({ onGamesSelected }: { onGamesSelected: (s
       <div className="flex items-center justify-center mt-6">
         <button
           onClick={handleSubmit}
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
+          className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
           disabled={selectedGames.length === 0 || (selectedGames.length > 1 && selectedGames.includes('Программирование / 3D дизайн'))}
         >
           Далее
