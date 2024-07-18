@@ -1,12 +1,8 @@
-'use client'
-import { useState, useEffect, useRef } from 'react';
+// Change the file name from ChatComponent.tsx to ProductListComponent.tsx
+
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import LottieLoader from '../components/Loader'; // make sure the path is correct
-
-interface Message {
-  text: string;
-  isUser: boolean;
-}
 
 interface Product {
   image: string | undefined;
@@ -15,21 +11,9 @@ interface Product {
   url: string;
 }
 
-interface ChatComponentProps {
-  initialPrompt: string;
-  budget: number; // Добавлен проп для бюджета
+interface ProductListComponentProps {
+  budget: number;
 }
-
-const MessageContent = ({ content }: { content: string }) => {
-  const formattedContent = content.split('\n').map((line, index) => {
-    if (line.match(/^\d+\./)) {
-      return <p key={index} className="mb-2">{line}</p>;
-    }
-    return <span key={index}>{line}<br/></span>;
-  });
-
-  return <div className="whitespace-pre-wrap">{formattedContent}</div>;
-};
 
 const ProductList = ({ products }: { products: Product[] }) => (
   <div className="mt-6">
@@ -55,44 +39,23 @@ const ProductList = ({ products }: { products: Product[] }) => (
   </div>
 );
 
-export default function ChatComponent({ initialPrompt, budget }: ChatComponentProps) { // Проп для бюджета
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+export default function ProductListComponent({ budget }: ProductListComponentProps) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const isInitialPromptSent = useRef(false);
 
   useEffect(() => {
-    if (!isInitialPromptSent.current) {
-      handleSendMessage(null, initialPrompt);
-      isInitialPromptSent.current = true;
-    }
-  }, [initialPrompt]);
+    fetchProducts();
+  }, [budget]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async (e: React.FormEvent | null, message: string = inputMessage) => {
-    if (e) e.preventDefault();
-    if (message.trim() === '') return;
-
-    const userMessage = { text: message, isUser: true };
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-    setInputMessage('');
-
+  const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log('Sending message:', message);
-      const response = await axios.post('http://localhost:5000/api/generate', { prompt: message, budget }, { // Включение бюджета в запрос
+      const response = await axios.post('http://localhost:5000/api/generate', { budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
       });
       console.log('Received response:', response.data);
-      const botMessage = { text: response.data.response, isUser: false };
-      setMessages(prevMessages => [...prevMessages, botMessage]);
 
       // Transform products object into an array
       const productsArray = Object.values(response.data.products) as Product[];
@@ -103,9 +66,7 @@ export default function ChatComponent({ initialPrompt, budget }: ChatComponentPr
         console.log('Updated products:', productsArray);
       }
     } catch (error) {
-      console.error('Error sending message to API:', error);
-      const errorMessage = { text: 'Error generating response from server.', isUser: false };
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
+      console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
@@ -118,36 +79,11 @@ export default function ChatComponent({ initialPrompt, budget }: ChatComponentPr
     <div className="max-w-6xl mx-auto bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl rounded-lg overflow-hidden border border-gray-700">
       {loading && <LottieLoader />}
       <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white p-4">
-        <h2 className="text-2xl font-bold">Чат с ИИ-ассистентом</h2>
+        <h2 className="text-2xl font-bold">Список продуктов</h2>
       </div>
-      <div className="h-[calc(100vh-300px)] overflow-y-auto p-6 bg-gray-900">
-        {messages.map((message, index) => (
-          <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
-            <div className={`inline-block p-4 rounded-lg ${message.isUser ? 'bg-green-500 text-white' : 'bg-gray-800 text-white'}`}>
-              <MessageContent content={message.text} />
-            </div>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
+      <div className="p-6 bg-gray-900">
+        <ProductList products={products} />
       </div>
-      <form onSubmit={(e) => handleSendMessage(e)} className="p-4 bg-gray-900 border-t border-gray-700">
-        <div className="flex flex-col md:flex-row">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            className="flex-grow mb-4 md:mb-0 md:mr-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 text-white"
-            placeholder="Введите ваше сообщение..."
-          />
-          <button
-            type="submit"
-            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-300 ease-in-out"
-          >
-            Отправить
-          </button>
-        </div>
-      </form>
-      <ProductList products={products} />
       <div className="p-4 bg-gray-800 border-t border-gray-700">
         <h3 className="text-xl font-bold text-green-400">Итоговая стоимость: {totalPrice} тг</h3>
       </div>

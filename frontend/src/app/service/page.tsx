@@ -103,7 +103,7 @@ export default function ServicePage() {
           </div>
         ) : (
           <div className="px-4 md:px-8">
-            <ChatComponent initialPrompt={initialPrompt} budget={formData.budget} /> {/* Передача бюджета */}
+            <ChatComponent  budget={formData.budget} /> {/* Передача бюджета */}
           </div>
         )}
       </main>
