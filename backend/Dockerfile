@@ -10,17 +10,33 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Install Chromium for Puppeteer
+# Install necessary dependencies for Chromium
 RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libpango1.0-0 \
+    libxcursor1 \
+    libxinerama1 \
+    libgl1-mesa-glx \
+    libdbus-glib-1-2 \
     chromium \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Set the PUPPETEER_SKIP_CHROMIUM_DOWNLOAD environment variable to true
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-
 # Set the appropriate environment variable for Puppeteer
-ENV CHROMIUM_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copy the rest of the application code to the working directory
 COPY . .
