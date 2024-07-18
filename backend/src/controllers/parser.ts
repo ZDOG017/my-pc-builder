@@ -15,14 +15,14 @@ function delay(ms: number) {
 }
 
 async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
-  const browser = await puppeteer.launch({ headless: true , args: ['--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-infobars',
-    '--window-position=0,0',
-    '--ignore-certifcate-errors',
-    '--ignore-certifcate-errors-spki-list',
-    '--user-agent=${userAgent}']});
-  const page = await browser.newPage();
+  const browser = await puppeteer.launch({ 
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-infobars', '--window-position=0,0', '--ignore-certifcate-errors', '--ignore-certifcate-errors-spki-list', '--user-agent=${userAgent}', '--disable-dev-shm-usage'],
+    timeout:60000
+  });
+
+    const page = await browser.newPage();
 
   try {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -33,7 +33,7 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
     const url = `https://kaspi.kz/shop/search/?text=${encodedName}&hint_chips_click=false`;
     console.log(`Fetching Kaspi.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: ['networkidle2','domcontentloaded','load','networkidle0'] });
+    await page.goto(url, { waitUntil: ['networkidle2','domcontentloaded','load','networkidle0'], timeout: 60000 });
 
     const products = await page.evaluate(() => {
       const productElements = document.querySelectorAll('.item-card');
