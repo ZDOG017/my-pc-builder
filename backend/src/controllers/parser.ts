@@ -54,13 +54,13 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
     const url = `https://kaspi.kz/shop/search/?text=${encodedName}&hint_chips_click=false`;
     console.log(`Fetching Kaspi.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: ['networkidle2', 'domcontentloaded', 'load', 'networkidle0'], timeout: 60000 });
+    await page.goto(url, { waitUntil: ['load'], timeout: 60000});
     console.log('Page loaded.');
 
     const products = await page.evaluate(() => {
       console.log('Evaluating products on the page...');
       const productElements = document.querySelectorAll('.item-card');
-      const products: Product[] = [];
+      const products: Product[] = []; 
 
       productElements.forEach((element, index) => {
         if (index >= 3) return; // Limit to 3 matching products
