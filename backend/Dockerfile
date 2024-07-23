@@ -26,6 +26,8 @@ COPY . .
 # Install dependencies
 RUN npm install
 
+RUN npx tsc
+
 # Expose the port your app runs on
 EXPOSE 5000
 
