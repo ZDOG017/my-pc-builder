@@ -23,6 +23,8 @@ WORKDIR /usr/src/app
 # Copy application code
 COPY . .
 
+RUN apt-get install chromium-browser
+
 # Install dependencies
 RUN npm install
 
