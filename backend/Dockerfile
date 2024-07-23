@@ -1,7 +1,7 @@
-# Use the official Node.js 20 image as the base image
+# Use the latest Alpine image
 FROM alpine:latest
 
-# Install Chromium and other dependencies
+# Install necessary packages
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -11,7 +11,15 @@ RUN apk add --no-cache \
     ttf-freefont \
     nodejs \
     npm \
-    yarn
+    yarn \
+    dumb-init \
+    udev \
+    ttf-opensans
+
+# Add user so we don't need --no-sandbox
+RUN addgroup -S pptruser && adduser -S -G pptruser pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -23,14 +31,14 @@ WORKDIR /usr/src/app
 # Copy application code
 COPY . .
 
-
-# Install dependencies
+# Install npm dependencies
 RUN npm install
 
+# Build the TypeScript code
 RUN npx tsc
 
 # Expose the port your app runs on
 EXPOSE 5000
 
-# Command to run the application
-CMD ["node", "dist/server.js"]
+# Run the application with dumb-init to handle PID 1
+CMD ["dumb-init", "node", "dist/server.js"]

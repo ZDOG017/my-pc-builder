@@ -28,7 +28,10 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
       '--ignore-certificate-errors',
       '--ignore-certificate-errors-spki-list',
       '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      '--disable-dev-shm-usage'
+      '--disable-dev-shm-usage',
+      '--single-process',
+      '--disable-gpu',
+      '--no-zygote',
     ],
     ignoreDefaultArgs: ['--disable-extensions'],
     timeout: 120000
