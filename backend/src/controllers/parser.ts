@@ -15,34 +15,52 @@ function delay(ms: number) {
 }
 
 async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]> {
-  const browser = await puppeteer.launch({ 
+  console.log(`Launching browser for search term: ${searchTerm}`);
+
+  const browser = await puppeteer.launch({
     headless: true,
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-infobars', '--window-position=0,0', '--ignore-certifcate-errors', '--ignore-certifcate-errors-spki-list', '--user-agent=${userAgent}', '--disable-dev-shm-usage'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-infobars',
+      '--window-position=0,0',
+      '--ignore-certificate-errors',
+      '--ignore-certificate-errors-spki-list',
+      '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      '--disable-dev-shm-usage'
+    ],
     ignoreDefaultArgs: ['--disable-extensions'],
-    timeout:60000
+    timeout: 120000
   });
 
-    const page = await browser.newPage();
+  console.log('Browser launched.');
+
+  const page = await browser.newPage();
+  console.log('New page created.');
 
   try {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
-    await delay(Math.floor(Math.random() * 3000) + 1000); // Delay from 1 to 4 seconds
+    console.log('User agent set.');
+
+    const delayTime = Math.floor(Math.random() * 3000) + 1000;
+    await delay(delayTime);
+    console.log(`Delay of ${delayTime} ms`);
 
     const encodedName = encodeURIComponent(searchTerm);
     const url = `https://kaspi.kz/shop/search/?text=${encodedName}&hint_chips_click=false`;
     console.log(`Fetching Kaspi.kz search URL: ${url}`);
 
-    await page.goto(url, { waitUntil: ['networkidle2','domcontentloaded','load','networkidle0'], timeout: 60000 });
+    await page.goto(url, { waitUntil: ['networkidle2', 'domcontentloaded', 'load', 'networkidle0'], timeout: 60000 });
+    console.log('Page loaded.');
 
     const products = await page.evaluate(() => {
+      console.log('Evaluating products on the page...');
       const productElements = document.querySelectorAll('.item-card');
       const products: Product[] = [];
 
       productElements.forEach((element, index) => {
         if (index >= 3) return; // Limit to 3 matching products
-        
 
         const nameElement = element.querySelector('.item-card__name-link');
         const priceElement = element.querySelector('.item-card__prices-price');
@@ -76,9 +94,11 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
         }
       });
 
+      console.log('Products evaluated.');
       return products;
     });
 
+    console.log(`Found ${products.length} products for search term: ${searchTerm}`);
     return products;
   } catch (error) {
     if (error instanceof Error) {
@@ -87,6 +107,7 @@ async function parseComponentFromKaspiKz(searchTerm: string): Promise<Product[]>
     return [];
   } finally {
     await browser.close();
+    console.log('Browser closed.');
   }
 }
 
