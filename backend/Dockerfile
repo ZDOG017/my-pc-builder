@@ -1,53 +1,30 @@
 # Use the official Node.js 20 image as the base image
-FROM node:20.14.0
+FROM alpine:latest
 
-# Install Chromium and its dependencies
-RUN apt-get update && apt-get install -y \
+# Install Chromium and other dependencies
+RUN apk add --no-cache \
     chromium \
-    fonts-liberation \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxss1 \
-    libxtst6 \
-    xdg-utils \
-    fonts-ipafont-gothic \
-    fonts-wqy-zenhei \
-    fonts-thai-tlwg \
-    fonts-kacst \
-    fonts-freefont-ttf \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    nodejs \
+    npm \
+    yarn
+
+# Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_CACHE_DIR=/home/web/.cache
 
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json (if available)
-COPY package*.json ./
+# Copy application code
+COPY . .
 
 # Install dependencies
 RUN npm install
-
-# Set the appropriate environment variable for Puppeteer
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Copy the rest of the application code to the working directory
-COPY . .
-
-# Compile TypeScript files (if you have a build script in your package.json)
-RUN npx tsc
 
 # Expose the port your app runs on
 EXPOSE 5000
