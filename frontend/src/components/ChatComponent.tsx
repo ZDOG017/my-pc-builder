@@ -35,7 +35,7 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('https://infinite-journey-03105-849dd3c77076.herokuapp.com/api/generate', { budget }, {
+      const response = await axios.post('https://mysterious-depths-91735-fc4544e431e4.herokuapp.com/api/generate', { budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
