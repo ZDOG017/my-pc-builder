@@ -1,13 +1,11 @@
-// ProductListComponent.tsx
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import LottieLoader from '../components/Loader';
 import ProductCard from './ProductCard';
 
 interface Product {
-  image: string | undefined;
-  name: string;
+  image: string;
+  title: string;
   price: number;
   url: string;
 }
@@ -27,29 +25,45 @@ const ProductList = ({ products }: { products: Product[] }) => (
 export default function ProductListComponent({ budget }: ProductListComponentProps) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const prevBudgetRef = useRef<number>();
 
   useEffect(() => {
-    fetchProducts();
+    if (prevBudgetRef.current !== budget) {
+      fetchProducts();
+      prevBudgetRef.current = budget;
+    }
   }, [budget]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('https://mysterious-depths-91735-fc4544e431e4.herokuapp.com/api/generate', { budget }, {
+      console.log('Fetching products with budget:', budget);
+      const response = await axios.post('https://quryltai-backend-675bed208f50.herokuapp.com/api/generate', { prompt: 'Build a PC', budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      const productsArray = Object.values(response.data.products) as Product[];
-      setProducts(productsArray);
+      console.log('Received response:', response.data);
+      
+      if (response.data.products && typeof response.data.products === 'object') {
+        const productsArray = Object.values(response.data.products) as Product[];
+        console.log('Parsed products:', productsArray);
+        setProducts(productsArray);
+        setTotalPrice(response.data.totalPrice);
+      } else {
+        console.error('Invalid products data in response:', response.data);
+        setProducts([]);
+        setTotalPrice(0);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
+      setTotalPrice(0);
     } finally {
       setLoading(false);
     }
   };
-
-  const totalPrice = products.reduce((sum, product) => sum + product.price, 0);
 
   return (
     <div className="bg-gray-900 shadow-2xl rounded-lg overflow-hidden">
@@ -70,9 +84,6 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
           <h3 className="text-2xl font-bold text-green-400">Итоговая стоимость:</h3>
           <p className="text-2xl font-bold text-white">{totalPrice} тг</p>
         </div>
-        {/* <button className="mt-4 w-full bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300 ease-in-out">
-          Оформить заказ
-        </button> */}
       </div>
     </div>
   );
