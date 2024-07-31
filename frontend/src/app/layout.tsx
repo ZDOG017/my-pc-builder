@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
@@ -10,14 +10,18 @@ export const metadata: Metadata = {
   description: "Наше приложение от QuryltAI использует искусственный интеллект для помощи пользователям в сборке компьютеров, подбирая оптимальные компоненты на основе заданного бюджета и предпочтений.",
   keywords: "сборка компьютера, искусственный интеллект, ПК, подбор компонентов, бюджетные сборки, высокопроизводительные ПК, ПК для игр, сборка ПК на заказ",
   authors: [{ name: "QuryltAI" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   openGraph: {
     title: "Сборка компьютера с помощью ИИ - QuryltAI",
     description: "Используйте наше приложение для создания идеального компьютера с помощью ИИ. Мы подберем лучшие компоненты на основе вашего бюджета и потребностей.",
-    url: "https://my-pc-builder.vercel.app",
+    url: "https://quryltai.vercel.app",
     siteName: "QuryltAI",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -43,7 +47,7 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <Analytics/>
-        </body>
+      </body>
     </html>
   );
 }
