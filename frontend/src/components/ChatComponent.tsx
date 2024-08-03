@@ -12,6 +12,7 @@ interface Product {
 
 interface ProductListComponentProps {
   budget: number;
+  selectedGames: string[];
 }
 
 const ProductList = ({ products }: { products: Product[] }) => (
@@ -22,10 +23,11 @@ const ProductList = ({ products }: { products: Product[] }) => (
   </div>
 );
 
-export default function ProductListComponent({ budget }: ProductListComponentProps) {
+export default function ProductListComponent({ budget, selectedGames }: ProductListComponentProps) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [fpsResults, setFpsResults] = useState<Record<string, number>>({});
   const prevBudgetRef = useRef<number>();
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
     try {
       setLoading(true);
       console.log('Fetching products with budget:', budget);
-      const response = await axios.post('https://quryltai-backend-675bed208f50.herokuapp.com/api/generate', { prompt: 'Build a PC', budget }, {
+      const response = await axios.post('http://localhost:5000/api/generate', { prompt: 'Build a PC', budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -65,6 +67,21 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
     }
   };
 
+  const checkFPS = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post('http://localhost:5000/api/checkFPS', {
+        games: selectedGames,
+        components: products.map(product => product.title)
+      });
+      setFpsResults(response.data);
+    } catch (error) {
+      console.error('Error checking FPS:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gray-900 shadow-2xl rounded-lg overflow-hidden">
       {loading && <LottieLoader />}
@@ -85,6 +102,22 @@ export default function ProductListComponent({ budget }: ProductListComponentPro
           <p className="text-2xl font-bold text-white">{totalPrice} тг</p>
         </div>
       </div>
+      <button
+        className="mt-5 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
+        onClick={checkFPS}
+      >
+        Чекнуть фыпысы в игорах
+      </button>
+      {Object.keys(fpsResults).length > 0 && (
+        <div className="mt-6 p-6 bg-gray-800">
+          <h3 className="text-2xl font-bold text-white mb-4">Результаты FPS:</h3>
+          {Object.entries(fpsResults).map(([game, fps]) => (
+            <p key={game} className="text-gray-200">
+              {game}: {fps} FPS
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

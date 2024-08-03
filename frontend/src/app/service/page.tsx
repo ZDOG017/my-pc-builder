@@ -52,6 +52,7 @@ export default function ServicePage() {
   
   Пожалуйста, предоставь список компонентов с примерными ценами, учитывая совместимость всех частей и оптимальное соотношение цена/качество.`;
   }
+  console.log(formData.games);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900">
@@ -103,7 +104,8 @@ export default function ServicePage() {
           </div>
         ) : (
           <div className="px-4 md:px-8">
-            <ChatComponent  budget={formData.budget} /> {/* Передача бюджета */}
+            <ChatComponent  budget={formData.budget} selectedGames={formData.games} /> {/* Передача бюджета */}
+            
           </div>
         )}
       </main>
