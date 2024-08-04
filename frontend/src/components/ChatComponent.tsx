@@ -56,7 +56,7 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
     try {
       setLoading(true);
       console.log('Fetching products with budget:', budget);
-      const response = await axios.post('http://localhost:5000/api/generate', { prompt: 'Build a PC', budget }, {
+      const response = await axios.post('https://quryltai-backend-675bed208f50.herokuapp.com/api/generate', { prompt: 'Build a PC', budget }, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -85,7 +85,7 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
   const checkFPS = async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/checkFPS', {
+      const response = await axios.post('https://quryltai-backend-675bed208f50.herokuapp.com/api/checkFPS', {
         games: selectedGames,
         components: products.map(product => product.title)
       });
