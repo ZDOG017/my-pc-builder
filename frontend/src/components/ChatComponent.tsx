@@ -27,9 +27,24 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [fpsResults, setFpsResults] = useState<Record<string, number>>({});
+  const [fpsResults, setFpsResults] = useState<Record<string, { fps: number; image: string }>>({});
   const prevBudgetRef = useRef<number>();
 
+  const games = [
+    { name: 'Apex Legends', image: '/01_Apex_Legends_140x175@2x.avif' },
+    { name: 'Cyberpunk 2077', image: '/cover_cyberpunk_140x175@2x.avif' },
+    { name: 'Valorant', image: '/v_140x175@2x.jpg' },
+    { name: 'The Finals', image: '/tf_140x175@2x.jpg' },
+    { name: 'Red Dead Redemption 2', image: '/RDR2_140x175@2x.avif' },
+    { name: 'GTA V', image: '/11_GTA_V_140x175@2x.avif' },
+    { name: 'Fortnite', image: '/09_Fortnite_140x175@2x.avif' },
+    { name: 'Counter Strike 2', image: '/BR_CS2_Icon_2_140x175@2x.avif' },
+    { name: 'COD Warzone', image: '/cover_cod_warzone_140x175@2x.avif' },
+    { name: 'League of Legends', image: '/14_League_Of_Legends_140x175@2x.avif' },
+    { name: 'Forza Horizon 5', image: '/fh5_140x175@2x.jpg' },
+    { name: 'Программирование / 3D дизайн', image: '/programming_3d_design.jpg' },
+  ];
+  
   useEffect(() => {
     if (prevBudgetRef.current !== budget) {
       fetchProducts();
@@ -74,7 +89,16 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
         games: selectedGames,
         components: products.map(product => product.title)
       });
-      setFpsResults(response.data);
+      const fpsData = response.data;
+      const fpsResultsWithImages = Object.keys(fpsData).reduce((acc, game) => {
+        const gameData = games.find(g => g.name === game);
+        if (gameData) {
+          acc[game] = { fps: fpsData[game], image: gameData.image };
+        }
+        return acc;
+      }, {} as Record<string, { fps: number; image: string }>);
+
+      setFpsResults(fpsResultsWithImages);
     } catch (error) {
       console.error('Error checking FPS:', error);
     } finally {
@@ -109,13 +133,19 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
         Чекнуть фыпысы в игорах
       </button>
       {Object.keys(fpsResults).length > 0 && (
-        <div className="mt-6 p-6 bg-gray-800">
+        <div className="mt-6 p-6 bg-gray-800 rounded-lg">
           <h3 className="text-2xl font-bold text-white mb-4">Результаты FPS:</h3>
-          {Object.entries(fpsResults).map(([game, fps]) => (
-            <p key={game} className="text-gray-200">
-              {game}: {fps} FPS
-            </p>
-          ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {Object.entries(fpsResults).map(([game, { fps, image }]) => (
+              <div key={game} className="flex items-center bg-gray-700 p-4 rounded-lg">
+                <img src={image} alt={game} className="w-16 h-16 rounded-lg mr-4" />
+                <div>
+                  <p className="text-xl font-bold text-white">{game}</p>
+                  <p className="text-gray-200">{fps} FPS</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
