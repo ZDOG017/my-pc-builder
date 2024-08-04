@@ -130,7 +130,7 @@ export default function ProductListComponent({ budget, selectedGames }: ProductL
         className="mt-5 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
         onClick={checkFPS}
       >
-        Чекнуть фыпысы в игорах
+        Вычислить примерный фпс в играх
       </button>
       {Object.keys(fpsResults).length > 0 && (
         <div className="mt-6 p-6 bg-gray-800 rounded-lg">
